@@ -35,6 +35,10 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 	namespace = 'eval-{}'.format(eval_id)
 	cluster.Resources.create_namespace(namespace)
 	
+	# Copy our evaluation credentials secret into the namespace, since pods cannot access secrets from other namespaces
+	credentials = cluster.Resources.read_secret('default', os.environ['GKE_SECRET_NAME'])
+	cluster.Resources.create_secret(namespace, os.environ['GKE_SECRET_NAME'], credentials)
+	
 	# Create a job for the bot pod
 	cluster.Resources.create_job(namespace, 'bot-job', k8s.V1PodSpec(
 		containers = [
