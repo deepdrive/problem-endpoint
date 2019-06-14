@@ -46,7 +46,11 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 						name = 'DEEPDRIVE_SIM_HOST',
 						value = 'sim'
 					)
-				]
+				],
+				resources = k8s.V1ResourceRequirements(
+					requests = {'nvidia.com/gpu': '1'},
+					limits = {'nvidia.com/gpu': '1'}
+				)
 			)
 		],
 		restart_policy = 'Never'
@@ -81,7 +85,11 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 						name = 'BOTLEAUGE_PROBLEM',
 						value = problem
 					)
-				]
+				],
+				resources = k8s.V1ResourceRequirements(
+					requests = {'nvidia.com/gpu': '1'},
+					limits = {'nvidia.com/gpu': '1'}
+				)
 			)
 		],
 		restart_policy = 'Never'
