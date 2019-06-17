@@ -68,6 +68,10 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 		)
 	]
 	
+	# The mount path and volume name for projecting our evaluation credentials into the sim pod
+	credentialsDir = '/home/ue4/credentials'
+	credentialsVolume = 'credentials'
+	
 	# Create a job for the sim pod
 	cluster.Resources.create_job(namespace, 'sim-job', k8s.V1PodSpec(
 		containers = [
@@ -77,9 +81,12 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 				ports = simPorts,
 				env = [
 					k8s.V1EnvVar(
-						# NOTE: this specifies the eval key as a GET parameter, but the docs list it as part of a POST body?
 						name = 'BOTLEAGUE_CALLBACK',
-						value = 'https://liaison.botleague.io/results?eval_key={}'.format(eval_key)
+						value = 'https://liaison.botleague.io/results'
+					),
+					k8s.V1EnvVar(
+						name = 'BOTLEAGUE_EVAL_KEY',
+						value = eval_key
 					),
 					k8s.V1EnvVar(
 						name = 'BOTLEAGUE_SEED',
@@ -88,15 +95,44 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 					k8s.V1EnvVar(
 						name = 'BOTLEAUGE_PROBLEM',
 						value = problem
+					),
+					k8s.V1EnvVar(
+						name = 'CREDENTIALS_DIR',
+						value = credentialsDir
 					)
 				],
 				resources = k8s.V1ResourceRequirements(
 					requests = {'nvidia.com/gpu': '1'},
 					limits = {'nvidia.com/gpu': '1'}
-				)
+				),
+				volume_mounts = [
+					k8s.V1VolumeMount(
+						name = credentialsVolume,
+						mount_path = credentialsDir,
+						read_only = True
+					)
+				]
 			)
 		],
-		restart_policy = 'Never'
+		restart_policy = 'Never',
+		volumes = [
+			k8s.V1Volume(
+				name = credentialsVolume,
+				secret = k8s.V1SecretVolumeSource(
+					secret_name = os.environ['GKE_SECRET_NAME'],
+					items = [
+						k8s.V1KeyToPath(
+							key = 'youtube-client-secret',
+							path = '.client_secrets.json'
+						),
+						k8s.V1KeyToPath(
+							key = 'youtube-credentials',
+							path = '.youtube-upload-credentials.json'
+						)
+					]
+				)
+			)
+		]
 	))
 	
 	# Create a headless service to provide DNS resolution to the sim pod
