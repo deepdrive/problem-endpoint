@@ -22,8 +22,8 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 		raise RuntimeError('unsupported problem "{}"'.format(problem))
 	
 	# Post a confirmation message to the Botleague liaison
-	# (Temporarily commented out until the Botleague liaison goes live)
-	#requests.post('https://liaison.botleague.io/confirm', date={'eval_key': eval_key})
+	# (Temporarily disabled until the Botleague liaison's confirmation endpoint goes live)
+	#confirmation = requests.post('https://liaison.botleague.io/confirm', data={'eval_key': eval_key})
 	
 	# Configure the Kubernetes client API to connect to our GKE cluster
 	try:
@@ -77,7 +77,7 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 		containers = [
 			k8s.V1Container(
 				name = 'sim',
-				image = 'deepdriveio/deepdrive:{}_problem'.format(problem),
+				image = 'deepdriveio/deepdrive:problem_{}'.format(problem),
 				ports = simPorts,
 				env = [
 					k8s.V1EnvVar(
