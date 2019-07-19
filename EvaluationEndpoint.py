@@ -77,7 +77,7 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 		containers = [
 			k8s.V1Container(
 				name = 'sim',
-				image = 'deepdriveio/deepdrive:problem_{}'.format(problem),
+				image = 'gcr.io/silken-impulse-217423/deepdrive:problem_{}'.format(problem),
 				ports = simPorts,
 				env = [
 					k8s.V1EnvVar(

@@ -3,5 +3,5 @@ service: sim
 
 env_variables:
   GKE_CLUSTER_ZONE: "us-west1-b"
-  GKE_CLUSTER_NAME: "test-cluster"
+  GKE_CLUSTER_NAME: "eval-cluster"
   GKE_SECRET_NAME: "eval-credentials"
