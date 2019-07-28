@@ -16,7 +16,7 @@ def home():
 	return 'Deepdrive problem endpoint. Source https://github.com/deepdrive/problem-endpoint'
 
 # Wire up our evaluation endpoint
-@app.route('/eval/<problem>')
+@app.route('/eval/<problem>', methods=['POST'])
 def endpoint(problem):
 	
 	try:
