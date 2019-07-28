@@ -22,12 +22,12 @@ def endpoint(problem):
 	try:
 		
 		# Unpack our endpoint parameters from the URL arguments
-		eval_id = request.args['eval_id']
-		eval_key = request.args['eval_key']
-		seed = request.args['seed']
-		docker_tag = request.args['docker_tag']
-		pull_request = request.args.get('pull_request', None)
-		
+		eval_id = request.json['eval_id']
+		eval_key = request.json['eval_key']
+		seed = request.json['seed']
+		docker_tag = request.json['docker_tag']
+		pull_request = request.json.get('pull_request', None)
+
 		# Run the endpoint logic
 		ret = jsonify(EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_request))
 
