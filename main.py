@@ -29,13 +29,13 @@ def endpoint(problem):
 		pull_request = request.args.get('pull_request', None)
 		
 		# Run the endpoint logic
-		return jsonify(EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_request))
-	
+		ret = jsonify(EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_request))
+
 	except KeyError as err:
 		
 		# If any or our required parameters were missing, send a "400 Bad Request" response
-		return make_error('the parameter {} is required'.format(err.args[0]), 400)
-		
+		ret = make_error('the parameter {} is required'.format(err.args[0]), 400)
+
 	except Exception as err:
 		
 		# If anything went wrong inside the endpoint logic, send a "500 Internal Server Error" response
