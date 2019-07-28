@@ -3,6 +3,12 @@ Deepdrive Problem Endpoint
 
 The Google App Engine (GAE) service in this repository is the [Botleague Problem Endpoint](https://github.com/botleague/botleague#problem-endpoints) for all problems that use the Deepdrive simulator.
 
+## Setup
+
+```
+pip install -r requirements.txt
+```
+
 
 ## Legal
 
