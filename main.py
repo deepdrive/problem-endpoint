@@ -11,6 +11,10 @@ def make_error(err, code):
 	response.status_code = code
 	return response
 
+@app.route('/')
+def home():
+	return 'Deepdrive problem endpoint. Source https://github.com/deepdrive/problem-endpoint'
+
 # Wire up our evaluation endpoint
 @app.route('/eval/<problem>')
 def endpoint(problem):
