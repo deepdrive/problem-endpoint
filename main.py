@@ -20,9 +20,7 @@ def home():
 # Wire up our evaluation endpoint
 @app.route('/eval/<problem>', methods=['POST'])
 def endpoint(problem):
-	
 	try:
-		
 		# Unpack our endpoint parameters from the URL arguments
 		eval_id = request.json['eval_id']
 		eval_key = request.json['eval_key']
