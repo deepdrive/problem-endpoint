@@ -32,7 +32,7 @@ def EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag, pull_reques
 		raise RuntimeError('the environment variable {} is missing'.format(err.args[0]))
 	
 	# Create a namespace for the Kubernetes objects associated with the eval run
-	namespace = 'eval-{}'.format(eval_id)
+	namespace = 'eval-{}'.format(eval_id.lower())
 	cluster.Resources.create_namespace(namespace)
 	
 	# Copy our evaluation credentials secret into the namespace, since pods cannot access secrets from other namespaces
