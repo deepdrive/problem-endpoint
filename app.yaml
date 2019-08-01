@@ -1,7 +1,11 @@
 runtime: python37
-service: sim
+service: deepdrive-sim-service
 
-env_variables:
-  GKE_CLUSTER_ZONE: "us-west1-b"
-  GKE_CLUSTER_NAME: "eval-cluster"
-  GKE_SECRET_NAME: "eval-credentials"
+# Basic scaling is necessary to allow the cron watchdog to run for up to 24h
+# Otherwise, it will be capped at 1 min. This _should_ be fine, so we can change
+# to automatic scaling once performance characteristics are known and we _need_
+# to scale that much.
+# c.f. https://cloud.google.com/tasks/docs/creating-appengine-handlers#timeouts
+basic_scaling:
+  max_instances: 25
+  idle_timeout: 10m

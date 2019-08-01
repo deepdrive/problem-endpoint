@@ -1,0 +1,5 @@
+cron:
+- description: "sim watchdog"
+  url: /watchdog_cron
+  schedule: every 1 mins synchronized
+  target: deepdrive-sim-service
