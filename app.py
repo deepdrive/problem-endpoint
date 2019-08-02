@@ -1,8 +1,13 @@
 import traceback
 
+from botleague_helpers.key_value_store import get_key_value_store
+from box import Box
 from flask import Flask, render_template, jsonify, request
+from google.cloud import firestore
 
-from EvaluationEndpoint import EvaluationEndpoint
+import constants
+from common import get_eval_jobs_kv_store
+from eval_manager import EvaluationManager
 
 app = Flask(__name__)
 
@@ -31,10 +36,22 @@ def endpoint(problem):
         docker_tag = request.json['docker_tag']
         pull_request = request.json.get('pull_request', None)
 
-        # Run the endpoint logic
-        ret = jsonify(
-            EvaluationEndpoint(problem, eval_id, eval_key, seed, docker_tag,
-                               pull_request))
+        kv = get_eval_jobs_kv_store()
+
+        job = dict(status=constants.JOB_STATUS_TO_START,
+                   eval_spec=dict(problem=problem, eval_id=eval_id,
+                                  eval_key=eval_key,
+                                  seed=seed, docker_tag=docker_tag,
+                                  pull_request=pull_request))
+
+        submitted = kv.compare_and_swap(key=eval_id,
+                                        expected_current_value=None,
+                                        new_value=job)
+
+        if not submitted:
+            ret = make_error('eval_id has already been processed', 403)
+        else:
+            ret = jsonify({'success': True})
 
     except KeyError as err:
         print(traceback.format_exc())
@@ -54,4 +71,4 @@ def endpoint(problem):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    app.run(host="0.0.0.0", port=8000, debug=True)

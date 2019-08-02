@@ -27,13 +27,18 @@ For more information, see the README.md under /compute.
 import argparse
 import os
 import time
+from os import path
 
 import googleapiclient.discovery
+from box import Box
 from six.moves import input
 
 
 # [START list_instances]
 import constants
+from util import read_json
+
+ROOT = os.path.dirname(os.path.realpath(__file__))
 
 
 def list_instances(compute, project, zone):
@@ -43,78 +48,83 @@ def list_instances(compute, project, zone):
 
 
 # [START create_instance]
-def create_instance(compute, project, zone, instance_name, bucket):
+def create_instance(compute, project, zone, instance_name):
     # Get the latest Debian Jessie image.
-    image_response = compute.images().getFromFamily(
-        project='debian-cloud', family='debian-9').execute()
-    source_disk_image = image_response['selfLink']
+    # image_response = compute.images().getFromFamily(
+    #     project='debian-cloud', family='debian-9').execute()
+    # source_disk_image = image_response['selfLink']
+    #
+    # # Configure the machine
+    # machine_type = "zones/%s/machineTypes/n1-standard-1" % zone
+    # startup_script = open(
+    #     os.path.join(
+    #         os.path.dirname(__file__), 'startup-script.sh'), 'r').read()
+    # image_url = "http://storage.googleapis.com/gce-demo-input/photo.jpg"
+    # image_caption = "Ready for dessert?"
 
-    # Configure the machine
-    machine_type = "zones/%s/machineTypes/n1-standard-1" % zone
-    startup_script = open(
-        os.path.join(
-            os.path.dirname(__file__), 'startup-script.sh'), 'r').read()
-    image_url = "http://storage.googleapis.com/gce-demo-input/photo.jpg"
-    image_caption = "Ready for dessert?"
+    config = Box.from_json(
+        filename=path.join(ROOT, 'eval_instance_config.json'))
 
-    config = {
-        'name': instance_name,
-        'machineType': machine_type,
+    config.instance_name = instance_name
 
-        # Specify the boot disk and the image to use as a source.
-        'disks': [
-            {
-                'boot': True,
-                'autoDelete': True,
-                'initializeParams': {
-                    'sourceImage': source_disk_image,
-                }
-            }
-        ],
-
-        # Specify a network interface with NAT to access the public
-        # internet.
-        'networkInterfaces': [{
-            'network': 'global/networks/default',
-            'accessConfigs': [
-                {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
-            ]
-        }],
-
-        # Allow the instance to access cloud storage and logging.
-        'serviceAccounts': [{
-            'email': 'default',
-            'scopes': [
-                'https://www.googleapis.com/auth/devstorage.read_write',
-                'https://www.googleapis.com/auth/logging.write'
-            ]
-        }],
-
-        # Metadata is readable from the instance and allows you to
-        # pass configuration from deployment scripts to instances.
-        'metadata': {
-            'items': [{
-                # Startup script is automatically executed by the
-                # instance upon startup.
-                'key': 'startup-script',
-                'value': startup_script
-            }, {
-                'key': 'url',
-                'value': image_url
-            }, {
-                'key': 'text',
-                'value': image_caption
-            }, {
-                'key': 'bucket',
-                'value': bucket
-            }]
-        }
-    }
+    # config = {
+    #     'name': instance_name,
+    #     'machineType': machine_type,
+    #
+    #     # Specify the boot disk and the image to use as a source.
+    #     'disks': [
+    #         {
+    #             'boot': True,
+    #             'autoDelete': True,
+    #             'initializeParams': {
+    #                 'sourceImage': source_disk_image,
+    #             }
+    #         }
+    #     ],
+    #
+    #     # Specify a network interface with NAT to access the public
+    #     # internet.
+    #     'networkInterfaces': [{
+    #         'network': 'global/networks/default',
+    #         'accessConfigs': [
+    #             {'type': 'ONE_TO_ONE_NAT', 'name': 'External NAT'}
+    #         ]
+    #     }],
+    #
+    #     # Allow the instance to access cloud storage and logging.
+    #     'serviceAccounts': [{
+    #         'email': 'default',
+    #         'scopes': [
+    #             'https://www.googleapis.com/auth/devstorage.read_write',
+    #             'https://www.googleapis.com/auth/logging.write'
+    #         ]
+    #     }],
+    #
+    #     # Metadata is readable from the instance and allows you to
+    #     # pass configuration from deployment scripts to instances.
+    #     'metadata': {
+    #         'items': [{
+    #             # Startup script is automatically executed by the
+    #             # instance upon startup.
+    #             'key': 'startup-script',
+    #             'value': startup_script
+    #         }, {
+    #             'key': 'url',
+    #             'value': image_url
+    #         }, {
+    #             'key': 'text',
+    #             'value': image_caption
+    #         }, {
+    #             'key': 'bucket',
+    #             'value': bucket
+    #         }]
+    #     }
+    # }
 
     return compute.instances().insert(
         project=project,
         zone=zone,
-        body=config).execute()
+        body=config.to_dict()).execute()
 # [END create_instance]
 
 
@@ -180,8 +190,12 @@ Once the image is uploaded press enter to delete the instance.
 def main():
     compute = googleapiclient.discovery.build('compute', 'v1')
     project = constants.GCP_PROJECT
+    zone = constants.GCP_ZONE
     instances = compute.instances().list(project=project,
-                                         zone=constants.GCP_ZONE).execute()
+                                         zone=zone).execute()
+    operation = create_instance(project=project, zone=zone,
+                    instance_name='deepdrive_eval_test')
+    wait_for_operation()
 
 
 
