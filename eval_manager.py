@@ -78,6 +78,11 @@ class EvaluationManager:
             # TODO: Deal with async operation futures returned from trigger
             #  Create instance
             #  Start instance
+            # TODO: Check for failed / crashed instance once per minute
+            # TODO: Stop instances if they have been idle for longer than timeout
+            # TODO: Cap total max instances
+            # TODO: Cap instances per bot owner, using first part of docker tag
+            # TODO: Delete instances over threshold
 
     def trigger_eval(self, job):
         problem = job.eval_spec.problem
