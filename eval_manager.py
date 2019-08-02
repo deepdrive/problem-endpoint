@@ -16,7 +16,7 @@ SUPPORTED_PROBLEMS = ['domain_randomization']
 # TODO:
 #   [x] We get a call from BL with the eval_id
 #   For problem and bot container
-#   Store the job information in Firestore with the instance-id before starting instance (get from instance creation or from DB on startup)
+#   [x] Store the job information in Firestore with the instance-id before starting instance (get from instance creation or from DB on startup)
 #      Here's how you get the instance id on an instance curl "http://metadata.google.internal/computeMetadata/v1/instance/id" -H "Metadata-Flavor: Google"
 #   Start a sim and bot instance in the loop, if none available, create.
 #   If this is a CI run, we'll have to build and push the container first.
