@@ -34,17 +34,20 @@ def main():
                     BOTLEAGUE_EVAL_KEY=job.eval_key,
                     BOTLEAGUE_SEED=job.seed,
                     BOTLEAUGE_PROBLEM=job.problem,
-
                 )
                 container = pull_and_run(dckr, docker_tag, env=container_env)
                 exit_code = container.attrs['State']['ExitCode']
+                # TODO: Upload the logs
                 if exit_code == 0:
-                    # TODO: Check that results got set in Firestore?
                     image = container.attrs['Image'][len('sha256:'):]
                     # dckr.containers.run(image, 'cat results.json')
+                    # Use container env['LATEST_BOTLEAGUE_RESULTS'] to get filepath
                     pass
                 else:
-                    # TODO: Send error to PROBLEM_CALLBACK
+                    pass
+                # TODO: Send error to RESULTS_CALLBACK
+                # TODO: Send exit code, logs link
+
                     pass
         # TODO: Clean up containers and images with LRU and depending on
         #  disk space
