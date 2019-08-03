@@ -65,7 +65,7 @@ def is_docker():
 def generate_rand_alphanumeric(num_chars):
     from secrets import choice
     import string
-    alphabet = string.ascii_uppercase + string.digits
+    alphabet = string.ascii_lowercase + string.digits
     ret = ''.join(choice(alphabet) for _ in range(num_chars))
     return ret
 

@@ -10,6 +10,7 @@ from botleague_helpers.key_value_store import get_key_value_store, \
 
 # Our list of supported problems
 import constants
+from common import get_eval_jobs_kv_store
 
 SUPPORTED_PROBLEMS = ['domain_randomization']
 
@@ -24,7 +25,7 @@ SUPPORTED_PROBLEMS = ['domain_randomization']
 #   If an instance is already started (check gcloud api with list filter) and available (which can be determined by querying firestore), set Firestore's new job data with instance id
 #   Instances will have startup script that checks Firestore for its instance by subscribing to Firestore event
 #   All calls in loop should be async, just one sleep at the end.
-#   Send results to PROBLEM_CALLBACK from sim and bot which then sets Firestore and forwards the results to BOTLEAGUE_CALLBACK (for sim only).
+#   Set results in Firestore on worker when job is complete then we'll forward to BOTLEAGUE_CALLBACK (for sim only).
 #   If the container process ends with a non-zero exit status, send an error response back to problem endpoint callback with a `docker run ... || send_failure_response.py`
 #   To detect failed instances, slowly query instance state (once per minute) as most the time it will be fine.
 #   Stop instances after results sent with idle_timeout.
@@ -41,6 +42,8 @@ SUPPORTED_PROBLEMS = ['domain_randomization']
 #   --metadata bread=mayo,cheese=cheddar,lettuce=romaine
 # gcloud compute instances add-metadata [INSTANCE_NAME] --metadata enable-guest-attributes=TRUE
 #
+
+INSTANCE_RUNNING_STATUS = 'running'
 
 
 class EvaluationManager:
@@ -59,18 +62,17 @@ class EvaluationManager:
 
     def __init__(self):
         self.operations_in_progress = []
-
-    @property
-    def kv(self) -> SimpleKeyValueStore:
-        if self._kv is None:
-            self._kv = get_key_value_store(
+        self.eval_instances_kv = get_key_value_store(
                 constants.EVAL_INSTANCES_COLLECTION_NAME,
                 use_boxes=True)
-        return self._kv
+        self.jobs_kv: SimpleKeyValueStore = get_eval_jobs_kv_store()
+        self.gce = googleapiclient.discovery.build('compute', 'v1')
+        self.project: str = constants.GCP_PROJECT
+        self.zone: str = constants.GCP_ZONE
 
     def check_for_new_jobs(self):
-        job_query = self.kv.collection.where('status', '==',
-                                             constants.JOB_STATUS_TO_START)
+        job_query = self.jobs_kv.collection.where('status', '==',
+                                                  constants.JOB_STATUS_TO_START)
         for job in job_query.stream():
             job = Box(job.to_dict())
             result = self.trigger_eval(job)
@@ -85,17 +87,14 @@ class EvaluationManager:
             # TODO: Delete instances over threshold
 
     def trigger_eval(self, job):
+        ret = Box(operations=[])
         problem = job.eval_spec.problem
 
         # Verify that the specified problem is supported
         if problem not in SUPPORTED_PROBLEMS:
             raise RuntimeError('unsupported problem "{}"'.format(problem))
 
-        eval_spec = job.eval_spec
-
-        compute = googleapiclient.discovery.build('compute', 'v1')
-        eval_instances = list_instances(compute, constants.INSTANCE_EVAL_LABEL)
-        self.add_eval_data(eval_instances)
+        eval_instances = self.list_instances(constants.INSTANCE_EVAL_LABEL)
 
         stopped_instances = [inst for inst in eval_instances
                              if inst.status.lower() == 'terminated']
@@ -104,20 +103,27 @@ class EvaluationManager:
                              if inst.status.lower() == 'running']
 
         for inst in started_instances:
-            if inst.eval_data.status.lower() == 'available':
-                self.set_job_to_start(inst, eval_spec)
+            if self.eval_instances_kv.get(inst.id).status == 'available':
+                self.set_job_to_start(inst, job)
                 # Now the instance should Firebase listener should get
                 # an event and start the job.
-                break
+                return ret
         else:
             if stopped_instances:
                 inst = stopped_instances[0]
-                self.set_job_to_start(inst, eval_spec)
-                # TODO: Start the instance
+                job.instance_id = inst.id
+                self.set_job_to_start(inst, job)
+                ret.operations.append(self.gce.instances().start(
+                    project=self.project,
+                    zone=self.zone,
+                    instance=inst.name).execute())
             else:
                 # TODO: Create a new instance
                 # TODO: Return create operation and check it
                 pass
+
+        # TODO: Set DEEPDRIVE_SIM_HOST
+        # TODO: Set network tags
 
         # Post a confirmation message to the Botleague liaison
         # (Temporarily disabled until the Botleague liaison's confirmation endpoint goes live)
@@ -254,36 +260,42 @@ class EvaluationManager:
 
         # If we reach this point then everything was submitted to the cluster successfully
 
-    def set_job_to_start(self, inst, job_spec):
-        inst.eval_data.status = constants.JOB_STATUS_TO_START
-        self.set_job_spec(inst, job_spec)
+        return ret
 
-    def add_eval_data(self, eval_instances: BoxList):
-        for inst in eval_instances:
-            inst_eval_data = self.kv.get(inst.id)
-            inst.eval_data = inst_eval_data
+    def set_job_to_start(self, instance, job):
+        job.status = constants.JOB_STATUS_TO_START
+        job.instance_id = instance.id
+        self.save_job(job)
 
-    def set_job_spec(self, inst, job_spec):
-        inst.eval_data.job_spec = job_spec
-        self.kv.set(inst.id, inst.eval_data)
+    def save_eval_instance(self, eval_instance):
+        self.eval_instances_kv.set(eval_instance.id, eval_instance)
 
+    def save_job(self, job):
+        job.id = job.eval_spec.eval_id  # The job id is the eval id
+        self.jobs_kv.set(job.id, job)
+        return job.id
 
-def list_instances(compute, label) -> BoxList:
-    if label:
-        query_filter = f'labels.{label}:*'
-    else:
-        query_filter = None
-    ret = compute.instances().list(project=constants.GCP_PROJECT,
-                                   zone=constants.GCP_ZONE,
-                                   filter=query_filter).execute()
-    ret = BoxList(ret)
-    return ret
+    def set_eval_data(self, inst, eval_spec):
+        inst.eval_spec = eval_spec
+        self.eval_instances_kv.set(inst.id, inst)
+
+    def list_instances(self, label) -> BoxList:
+        if label:
+            query_filter = f'labels.{label}:*'
+        else:
+            query_filter = None
+        ret = self.gce.instances().list(project=self.project,
+                                        zone=self.zone,
+                                        filter=query_filter).execute()
+        ret = BoxList(ret['items'])
+        return ret
 
 
 def main():
-    compute = googleapiclient.discovery.build('compute', 'v1')
-    eval_instances = list_instances(compute, label='deepdrive-eval')
-    pass
+    # compute = googleapiclient.discovery.build('compute', 'v1')
+    # eval_instances = list_instances(compute, label='deepdrive-eval')
+    eval_mgr = EvaluationManager()
+    eval_mgr.check_for_new_jobs()
 
 
 if __name__ == '__main__':

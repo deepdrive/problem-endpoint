@@ -8,9 +8,6 @@ INSTANCE_EVAL_LABEL = 'deepdrive-eval'
 EVAL_INSTANCES_COLLECTION_NAME = 'deepdrive_eval_instances'
 EVAL_JOBS_COLLECTION_NAME = 'deepdrive_eval_jobs'
 
-# Create this manually
-EVAL_LOOP_SEMAPHORE_COLLECTION_NAME = 'deepdrive_eval_loop_semaphore'
-
 JOB_STATUS_TO_START = 'to_start'
 
 

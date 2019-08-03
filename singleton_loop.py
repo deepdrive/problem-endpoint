@@ -5,10 +5,9 @@ import logging as log
 import traceback
 from typing import Union
 
-from botleague_helpers.key_value_store import SimpleKeyValueStore
+from botleague_helpers.key_value_store import get_key_value_store
 
 import util
-from common import  get_semaphore_kv
 from eval_manager import EvaluationManager
 
 log.basicConfig(level=log.INFO)
@@ -22,11 +21,12 @@ STATUS = 'status'
 
 
 class SingletonLoop:
-    def __init__(self, fn, name):
+    def __init__(self, name, fn, use_firestore_db=False):
         self.fn = fn
         self.name = name
+        self.kv = get_key_value_store(name + '_semaphore', use_boxes=True,
+                                      use_firestore_db=use_firestore_db)
         self.kill_now = False
-        self.kv = get_semaphore_kv()
         self.id = util.generate_rand_alphanumeric(10)
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)
@@ -40,18 +40,23 @@ class SingletonLoop:
         if self.kill_now:
             self.release_semaphore()
 
-    def obtain_semaphore(self):
+    def obtain_semaphore(self, timeout=None):
+        start = time.time()
         if self.kv.get(STATUS) == STOPPED:
-            return
+            self.kv.set(STATUS, RUNNING + self.id)
+            return True
         self.request_semaphore()
-        while not self.obtained_semaphore():
+        while not self.granted_semaphore():
             log.error('Waiting for other eval loop to end')
-            time.sleep(1)
+            if timeout is not None and time.time() - start > timeout:
+                return False
+            else:
+                time.sleep(1)
 
     def request_semaphore(self):
         self.kv.set(STATUS, REQUESTED + self.id)
 
-    def obtained_semaphore(self):
+    def granted_semaphore(self):
         ret = self.kv.compare_and_swap(
             key=STATUS,
             expected_current_value=GRANTED + self.id,
@@ -61,13 +66,13 @@ class SingletonLoop:
     def semaphore_released(self):
         req = self.semaphore_requested()
         if req:
-            try:
+            if req == STOPPED:
+                log.info('Stop loop requested from db')
+            elif req.startswith(REQUESTED):
                 self.grant_semaphore(req)
-            except Exception:
-                log.error(traceback.format_exc())
-                log.error('Error granting semaphore, stopping')
+                log.info('End loop requested, granted and stopping')
             else:
-                log.info('End loop requested, stopping')
+                log.info('Stopping for unexpected status %s', req)
             return True
         else:
             return False
@@ -78,7 +83,7 @@ class SingletonLoop:
             return False
         else:
             log.info('Semaphore changed to %s, stopping', status)
-            if not status.startswith(REQUESTED):
+            if not status.startswith(REQUESTED) and status != STOPPED:
                 log.error('Unexpected semaphore status %s', status)
             return status
 
@@ -95,7 +100,8 @@ class SingletonLoop:
 
 def main():
     eval_mgr = EvaluationManager()
-    SingletonLoop(fn=eval_mgr.check_for_new_jobs, name='eval_loop').run()
+    SingletonLoop(name='deepdrive_eval_loop',
+                  fn=eval_mgr.check_for_new_jobs).run()
 
 
 if __name__ == '__main__':

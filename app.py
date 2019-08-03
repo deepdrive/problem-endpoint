@@ -1,5 +1,6 @@
 import traceback
 
+import requests
 from botleague_helpers.key_value_store import get_key_value_store
 from box import Box
 from flask import Flask, render_template, jsonify, request
@@ -10,6 +11,8 @@ from common import get_eval_jobs_kv_store
 from eval_manager import EvaluationManager
 
 app = Flask(__name__)
+
+RESULTS_CALLBACK = 'https://sim.deepdrive.io/eval_results'
 
 
 # Creates a JSON error response with the specified HTTP status code
@@ -36,22 +39,29 @@ def endpoint(problem):
         docker_tag = request.json['docker_tag']
         pull_request = request.json.get('pull_request', None)
 
-        kv = get_eval_jobs_kv_store()
-
-        job = dict(status=constants.JOB_STATUS_TO_START,
-                   eval_spec=dict(problem=problem, eval_id=eval_id,
-                                  eval_key=eval_key,
-                                  seed=seed, docker_tag=docker_tag,
-                                  pull_request=pull_request))
-
-        submitted = kv.compare_and_swap(key=eval_id,
-                                        expected_current_value=None,
-                                        new_value=job)
-
-        if not submitted:
-            ret = make_error('eval_id has already been processed', 403)
+        # TODO: Send confirm request
+        confirmation = requests.post('https://liaison.botleague.io/confirm',
+                                     data={'eval_key': eval_key})
+        if not confirmation.ok:
+            ret = make_error('Could not confirm eval with Botleague')
         else:
-            ret = jsonify({'success': True})
+            kv = get_eval_jobs_kv_store()
+
+            job = dict(status=constants.JOB_STATUS_TO_START,
+                       eval_spec=dict(
+                           problem=problem, eval_id=eval_id, eval_key=eval_key,
+                           seed=seed, docker_tag=docker_tag,
+                           pull_request=pull_request,
+                           results_callback=RESULTS_CALLBACK,))
+
+            submitted = kv.compare_and_swap(key=eval_id,
+                                            expected_current_value=None,
+                                            new_value=job)
+
+            if not submitted:
+                ret = make_error('eval_id has already been processed', 403)
+            else:
+                ret = jsonify({'success': True})
 
     except KeyError as err:
         print(traceback.format_exc())

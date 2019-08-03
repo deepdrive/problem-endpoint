@@ -1,4 +1,4 @@
-POST http://0.0.0.0:8000/eval/my_problem
+POST http://0.0.0.0:8000/eval/domain_randomization
 Content-Type: application/json
 
 {
