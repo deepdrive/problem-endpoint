@@ -1,18 +1,13 @@
 import traceback
 
 import requests
-from botleague_helpers.key_value_store import get_key_value_store
-from box import Box
-from flask import Flask, render_template, jsonify, request
-from google.cloud import firestore
+from flask import Flask, jsonify, request
 
 import constants
 from common import get_eval_jobs_kv_store
-from eval_manager import EvaluationManager
+from constants import RESULTS_CALLBACK
 
 app = Flask(__name__)
-
-RESULTS_CALLBACK = 'https://sim.deepdrive.io/eval_results'
 
 
 # Creates a JSON error response with the specified HTTP status code

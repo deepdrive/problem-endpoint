@@ -68,5 +68,3 @@ def generate_rand_alphanumeric(num_chars):
     alphabet = string.ascii_lowercase + string.digits
     ret = ''.join(choice(alphabet) for _ in range(num_chars))
     return ret
-
-

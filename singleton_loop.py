@@ -7,6 +7,7 @@ from typing import Union
 
 from botleague_helpers.key_value_store import get_key_value_store
 
+import constants
 import util
 from eval_manager import EvaluationManager
 
@@ -21,10 +22,10 @@ STATUS = 'status'
 
 
 class SingletonLoop:
-    def __init__(self, name, fn, use_firestore_db=False):
+    def __init__(self, loop_id, fn, use_firestore_db=False):
         self.fn = fn
-        self.name = name
-        self.kv = get_key_value_store(name + '_semaphore', use_boxes=True,
+        self.loop_id = loop_id
+        self.kv = get_key_value_store(loop_id + '_semaphore', use_boxes=True,
                                       use_firestore_db=use_firestore_db)
         self.kill_now = False
         self.id = util.generate_rand_alphanumeric(10)
@@ -100,7 +101,7 @@ class SingletonLoop:
 
 def main():
     eval_mgr = EvaluationManager()
-    SingletonLoop(name='deepdrive_eval_loop',
+    SingletonLoop(loop_id=constants.EVAL_LOOP_ID,
                   fn=eval_mgr.check_for_new_jobs).run()
 
 
