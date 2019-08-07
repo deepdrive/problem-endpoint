@@ -9,7 +9,9 @@ from botleague_helpers.key_value_store import get_key_value_store, \
     SimpleKeyValueStore
 
 # Our list of supported problems
-import constants
+from constants import INSTANCE_STATUS_AVAILABLE, INSTANCE_STATUS_RUNNING, \
+    JOB_STATUS_TO_START, GCP_ZONE, GCP_PROJECT, EVAL_INSTANCES_COLLECTION_NAME, \
+    INSTANCE_EVAL_LABEL
 from common import get_eval_jobs_kv_store
 
 SUPPORTED_PROBLEMS = ['domain_randomization']
@@ -43,8 +45,6 @@ SUPPORTED_PROBLEMS = ['domain_randomization']
 # gcloud compute instances add-metadata [INSTANCE_NAME] --metadata enable-guest-attributes=TRUE
 #
 
-INSTANCE_RUNNING_STATUS = 'running'
-
 
 class EvaluationManager:
     """
@@ -62,17 +62,17 @@ class EvaluationManager:
 
     def __init__(self):
         self.operations_in_progress = []
-        self.eval_instances_kv = get_key_value_store(
-                constants.EVAL_INSTANCES_COLLECTION_NAME,
+        self.eval_instances_db = get_key_value_store(
+                EVAL_INSTANCES_COLLECTION_NAME,
                 use_boxes=True)
-        self.jobs_kv: SimpleKeyValueStore = get_eval_jobs_kv_store()
+        self.jobs_db: SimpleKeyValueStore = get_eval_jobs_kv_store()
         self.gce = googleapiclient.discovery.build('compute', 'v1')
-        self.project: str = constants.GCP_PROJECT
-        self.zone: str = constants.GCP_ZONE
+        self.project: str = GCP_PROJECT
+        self.zone: str = GCP_ZONE
 
     def check_for_new_jobs(self):
-        job_query = self.jobs_kv.collection.where('status', '==',
-                                                  constants.JOB_STATUS_TO_START)
+        job_query = self.jobs_db.collection.where('status', '==',
+                                                  JOB_STATUS_TO_START)
         for job in job_query.stream():
             job = Box(job.to_dict())
             result = self.trigger_eval(job)
@@ -94,7 +94,7 @@ class EvaluationManager:
         if problem not in SUPPORTED_PROBLEMS:
             raise RuntimeError('unsupported problem "{}"'.format(problem))
 
-        eval_instances = self.list_instances(constants.INSTANCE_EVAL_LABEL)
+        eval_instances = self.list_instances(INSTANCE_EVAL_LABEL)
 
         stopped_instances = [inst for inst in eval_instances
                              if inst.status.lower() == 'terminated']
@@ -103,10 +103,11 @@ class EvaluationManager:
                              if inst.status.lower() == 'running']
 
         for inst in started_instances:
-            if self.eval_instances_kv.get(inst.id).status == 'available':
+            inst_meta = self.eval_instances_db.get(inst.id)
+            if not inst_meta or inst_meta.status == INSTANCE_STATUS_AVAILABLE:
                 self.set_job_to_start(inst, job)
-                # Now the instance should Firebase listener should get
-                # an event and start the job.
+                self.eval_instances_db.set(
+                    inst.id, Box(inst=inst, status=INSTANCE_STATUS_RUNNING))
                 return ret
         else:
             if stopped_instances:
@@ -255,29 +256,26 @@ class EvaluationManager:
         # cluster.Resources.create_network_policy(namespace, 'allow-dns', cluster.SpecFactory.network_policy_dns_only(botSelector))
         # cluster.Resources.create_network_policy(namespace, 'allow-sim', cluster.SpecFactory.network_policy_pods_only(botSelector, simSelector))
 
-        # TODO: GCE
-        #   Create the app engine task that starts / creates the instance
-
         # If we reach this point then everything was submitted to the cluster successfully
 
         return ret
 
     def set_job_to_start(self, instance, job):
-        job.status = constants.JOB_STATUS_TO_START
+        job.status = JOB_STATUS_TO_START  # TODO: cas
         job.instance_id = instance.id
         self.save_job(job)
 
     def save_eval_instance(self, eval_instance):
-        self.eval_instances_kv.set(eval_instance.id, eval_instance)
+        self.eval_instances_db.set(eval_instance.id, eval_instance)
 
     def save_job(self, job):
         job.id = job.eval_spec.eval_id  # The job id is the eval id
-        self.jobs_kv.set(job.id, job)
+        self.jobs_db.set(job.id, job)
         return job.id
 
     def set_eval_data(self, inst, eval_spec):
         inst.eval_spec = eval_spec
-        self.eval_instances_kv.set(inst.id, inst)
+        self.eval_instances_db.set(inst.id, inst)
 
     def list_instances(self, label) -> BoxList:
         if label:
