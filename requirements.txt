@@ -7,3 +7,4 @@ botleague-helpers
 python-box
 google-cloud-storage>=1.15.0
 google-auth>=1.6.3
+loguru
