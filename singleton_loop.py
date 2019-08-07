@@ -104,6 +104,8 @@ class SingletonLoop:
         return ret
 
     def semaphore_released(self):
+        # TODO: Avoid polling by creating a Firestore watch and using a
+        #   mutex to avoid multiple threads processing the watch.
         req = self.semaphore_requested()
         if req:
             if req == STOPPED:
