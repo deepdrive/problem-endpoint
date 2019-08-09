@@ -16,6 +16,10 @@ EVAL_INSTANCES_COLLECTION_NAME = 'deepdrive_eval_instances'
 EVAL_JOBS_COLLECTION_NAME = 'deepdrive_eval_jobs'
 EVAL_LOOP_ID = 'deepdrive_eval_loop'
 
+# Needs to be divisible by 2 as we start a problem and bot instance for each
+# eval
+MAX_EVAL_INSTANCES = 6
+
 # This should be public for submitters to see logs
 BOTLEAGUE_LOG_BUCKET = 'deepdriveio'
 

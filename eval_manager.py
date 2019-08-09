@@ -7,7 +7,8 @@ from botleague_helpers.db import DB
 import utils
 from constants import INSTANCE_STATUS_AVAILABLE, INSTANCE_STATUS_USED, \
     JOB_STATUS_TO_START, GCP_ZONE, GCP_PROJECT, INSTANCE_EVAL_LABEL, \
-    SUPPORTED_PROBLEMS, ROOT, INSTANCE_CONFIG_PATH, INSTANCE_NAME_PREFIX
+    SUPPORTED_PROBLEMS, ROOT, INSTANCE_CONFIG_PATH, INSTANCE_NAME_PREFIX, \
+    MAX_EVAL_INSTANCES
 from common import get_jobs_db, get_instances_db
 from logs import log
 
@@ -16,12 +17,13 @@ from logs import log
 #   For problem and bot container
 #   [x] Store the job information in Firestore with the instance-id before starting instance (get from instance creation or from DB on startup)
 #      Here's how you get the instance id on an instance curl "http://metadata.google.internal/computeMetadata/v1/instance/id" -H "Metadata-Flavor: Google"
-#   Start a sim and bot instance in the loop, if none available, create.
+#   [x] Start instance in the loop, if none available, create.
+#   Start a problem AND bot instance
 #   If this is a CI run, we'll have to build and push the container first.
-#   If an instance is already created but stopped, then start it
-#   If an instance is already started (check gcloud api with list filter) and available (which can be determined by querying firestore), set Firestore's new job data with instance id
+#   [x] If an instance is already created but stopped, then start it
+#   [x] If an instance is already started (check gcloud api with list filter) and available (which can be determined by querying firestore), set Firestore's new job data with instance id
 #   [x] Instances will have run a worker which checks Firestore for jobs using its instance id
-#   All calls in loop should be async, just one sleep at the end.
+#   [x] All calls in loop should be async, just one sleep at the end.
 #   Set results in Firestore on worker when job is complete then we'll forward to BOTLEAGUE_CALLBACK (for problems only, not bots!).
 #   [x] If the container process ends with a non-zero exit status, the worker process will set an error in the results in Firestore
 #   To detect failed instances, slowly query instance state (once per minute) as most the time it will be fine.
@@ -66,6 +68,30 @@ class EvaluationManager:
     def loop(self):
         self.check_for_new_jobs()
         self.check_ops_in_progress()
+        # TODO: self.check_for_new_results()
+        # TODO: self.stop_idle_instances()
+        # TODO: self.delete_idle_instances_over_threshold()
+
+    def check_for_new_jobs(self) -> BoxList:
+        job_query = self.jobs_db.collection.where('status', '==',
+                                                  JOB_STATUS_TO_START)
+        new_jobs = BoxList()
+        for job in job_query.stream():
+            job = Box(job.to_dict())
+            job = self.trigger_eval(job)
+            # TODO: If job not started, keep checking for available instances
+            new_jobs.append(job)
+
+            # TODO: Deal with async operation futures returned from trigger
+            #  Create instance
+            #  Start instance
+            # TODO: Check for failed / crashed instance once per minute
+            # TODO: Stop instances if they have been idle for longer than timeout
+            # TODO: Cap total max instances
+            # TODO: Cap instances per bot owner, using first part of docker tag
+            # TODO: Delete instances over threshold
+
+        return new_jobs
 
     def check_ops_in_progress(self):
         ops_still_in_progress = BoxList()
@@ -90,26 +116,6 @@ class EvaluationManager:
                 ops_still_in_progress.append(op)
         self.ops_in_progress = ops_still_in_progress
 
-    def check_for_new_jobs(self) -> BoxList:
-        job_query = self.jobs_db.collection.where('status', '==',
-                                                  JOB_STATUS_TO_START)
-        new_jobs = BoxList()
-        for job in job_query.stream():
-            job = Box(job.to_dict())
-            result = self.trigger_eval(job)
-            new_jobs.append(job)
-            self.ops_in_progress += result.operations
-            # TODO: Deal with async operation futures returned from trigger
-            #  Create instance
-            #  Start instance
-            # TODO: Check for failed / crashed instance once per minute
-            # TODO: Stop instances if they have been idle for longer than timeout
-            # TODO: Cap total max instances
-            # TODO: Cap instances per bot owner, using first part of docker tag
-            # TODO: Delete instances over threshold
-
-        return new_jobs
-
     def trigger_eval(self, job):
         ret = Box(operations=BoxList())
         problem = job.eval_spec.problem
@@ -119,6 +125,12 @@ class EvaluationManager:
             raise RuntimeError('unsupported problem "{}"'.format(problem))
 
         eval_instances = self.list_instances(INSTANCE_EVAL_LABEL)
+
+        if len(eval_instances) >= MAX_EVAL_INSTANCES:
+            log.error('Over instance limit, waiting for instances to become '
+                      'available')
+            return job
+
         stopped_instances = [inst for inst in eval_instances
                              if inst.status.lower() == 'terminated']
 
@@ -139,7 +151,6 @@ class EvaluationManager:
                 self.set_job_to_start(inst, job)
                 self.start_instance(inst, ret)
             else:
-                # TODO: Create a new instance
                 ret.operations.append(self.create_instance(
                     current_instances=eval_instances))
 
@@ -278,8 +289,8 @@ class EvaluationManager:
         # cluster.Resources.create_network_policy(namespace, 'allow-sim', cluster.SpecFactory.network_policy_pods_only(botSelector, simSelector))
 
         # If we reach this point then everything was submitted to the cluster successfully
-
-        return ret
+        self.ops_in_progress += ret.operations
+        return job
 
     def start_instance(self, inst, ret):
         ret.operations.append(self.gce.instances().start(
