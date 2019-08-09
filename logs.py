@@ -41,6 +41,7 @@ LOGURU severities
 VALID_STACK_DRIVER_LEVELS = ['DEFAULT', 'DEBUG', 'INFO', 'NOTICE', 'WARNING',
                              'ERROR', 'CRITICAL', 'ALERT', 'EMERGENCY']
 
+
 def add_stackdriver_sink(loguru_logger, log_name):
     stackdriver_logger = stackdriver_client.logger(
         f'{STACKDRIVER_LOG_NAME}-{log_name}')

@@ -28,7 +28,10 @@ JOB_STATUS_RUNNING = 'running'
 JOB_STATUS_FINISHED = 'finished'
 
 INSTANCE_STATUS_AVAILABLE = 'available'
-INSTANCE_STATUS_RUNNING = 'running'
-
+INSTANCE_STATUS_USED = 'used'
+INSTANCE_CONFIG_PATH = 'cloud_configs/eval_instace_create.json'
+INSTANCE_NAME_PREFIX = 'deepdrive-eval-problem-worker-'
 
 RESULTS_CALLBACK = 'https://sim.deepdrive.io/eval_results'
+SUPPORTED_PROBLEMS = ['domain_randomization']
+ROOT = os.path.dirname(os.path.realpath(__file__))

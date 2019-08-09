@@ -4,10 +4,10 @@ import time
 import traceback
 from typing import Union
 
-from botleague_helpers.key_value_store import get_key_value_store
+from botleague_helpers.db import get_db
 
 import constants
-import util
+import utils
 from eval_manager import EvaluationManager
 from logs import log
 
@@ -25,10 +25,10 @@ class SingletonLoop:
     def __init__(self, loop_name, fn, force_firestore_db=False):
         self.fn = fn
         self.loop_name = loop_name
-        self.db = get_key_value_store(loop_name + '_semaphore', use_boxes=True,
+        self.db = get_db(loop_name + '_semaphore', use_boxes=True,
                                       force_firestore_db=force_firestore_db)
         self.kill_now = False
-        self.id = util.generate_rand_alphanumeric(10)
+        self.id = utils.generate_rand_alphanumeric(10)
         self.previous_status = None
         signal.signal(signal.SIGINT, self.exit_gracefully)
         signal.signal(signal.SIGTERM, self.exit_gracefully)

@@ -1,9 +1,11 @@
-from botleague_helpers.key_value_store import get_key_value_store
+from botleague_helpers.db import get_db
 
 import constants
 
 
-def get_eval_jobs_kv_store():
-    return get_key_value_store(
-        constants.EVAL_JOBS_COLLECTION_NAME,
-        use_boxes=True)
+def get_jobs_db():
+    return get_db(constants.EVAL_JOBS_COLLECTION_NAME, use_boxes=True)
+
+
+def get_instances_db():
+    return get_db(constants.EVAL_INSTANCES_COLLECTION_NAME, use_boxes=True)

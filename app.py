@@ -4,7 +4,7 @@ import requests
 from flask import Flask, jsonify, request
 
 import constants
-from common import get_eval_jobs_kv_store
+from common import get_jobs_db
 from constants import RESULTS_CALLBACK
 
 app = Flask(__name__)
@@ -40,7 +40,7 @@ def endpoint(problem):
         if not confirmation.ok:
             ret = make_error('Could not confirm eval with Botleague')
         else:
-            kv = get_eval_jobs_kv_store()
+            db = get_jobs_db()
 
             job = dict(status=constants.JOB_STATUS_TO_START,
                        eval_spec=dict(
@@ -49,7 +49,7 @@ def endpoint(problem):
                            pull_request=pull_request,
                            results_callback=RESULTS_CALLBACK,))
 
-            submitted = kv.compare_and_swap(key=eval_id,
+            submitted = db.compare_and_swap(key=eval_id,
                                             expected_current_value=None,
                                             new_value=job)
 
