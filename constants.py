@@ -26,6 +26,7 @@ BOTLEAGUE_LOG_BUCKET = 'deepdriveio'
 BOTLEAGUE_LOG_DIR = 'botleague_eval_logs'
 BOTLEAGUE_RESULTS_DIR = '/mnt/botleague'
 BOTLEAGUE_RESULTS_FILEPATH = f'{BOTLEAGUE_RESULTS_DIR}/results.json'
+BOTLEAGUE_RESULTS_CALLBACK = 'https://sim.deepdrive.io/results'
 
 JOB_STATUS_TO_START = 'to_start'
 JOB_STATUS_RUNNING = 'running'
@@ -33,8 +34,10 @@ JOB_STATUS_FINISHED = 'finished'
 
 INSTANCE_STATUS_AVAILABLE = 'available'
 INSTANCE_STATUS_USED = 'used'
-INSTANCE_CONFIG_PATH = 'cloud_configs/eval_instace_create.json'
+INSTANCE_CONFIG_PATH = 'cloud_configs/eval_instance_create.json'
 INSTANCE_NAME_PREFIX = 'deepdrive-eval-problem-worker-'
+
+METADATA_URL = 'http://metadata.google.internal/computeMetadata/v1/instance'
 
 RESULTS_CALLBACK = 'https://sim.deepdrive.io/eval_results'
 SUPPORTED_PROBLEMS = ['domain_randomization']
