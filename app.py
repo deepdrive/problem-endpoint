@@ -9,7 +9,7 @@ from flask import Flask, jsonify, request
 import constants
 from common import get_jobs_db, get_instances_db
 from constants import RESULTS_CALLBACK
-from logs import log
+from loguru import logger as log
 
 app = Flask(__name__)
 
@@ -58,33 +58,6 @@ def handle_eval(problem):
     return ret
 
 
-def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed):
-    # TODO: Send confirm request
-    confirmation = requests.post('https://liaison.botleague.io/confirm',
-                                 data={'eval_key': eval_key})
-    if not confirmation.ok:
-        ret = make_error('Could not confirm eval with Botleague', 401)
-    else:
-        db = get_jobs_db()
-
-        job = dict(status=constants.JOB_STATUS_TO_START,
-                   eval_spec=dict(
-                       problem=problem, eval_id=eval_id, eval_key=eval_key,
-                       seed=seed, docker_tag=docker_tag,
-                       pull_request=pull_request,
-                       results_callback=RESULTS_CALLBACK, ))
-
-        submitted = db.compare_and_swap(key=eval_id,
-                                        expected_current_value=None,
-                                        new_value=job)
-
-        if not submitted:
-            ret = make_error('eval_id has already been processed', 403)
-        else:
-            ret = jsonify({'success': True})
-    return ret
-
-
 @app.route('/results', methods=['POST'])
 def handle_results() -> Any:
     req = Box(request.json)
@@ -109,6 +82,32 @@ def handle_results() -> Any:
         json_resp = results_resp.json()
         log.success(json_resp)
         ret = json_resp
+    return ret
+
+
+def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed):
+    confirmation = requests.post('https://liaison.botleague.io/confirm',
+                                 data={'eval_key': eval_key})
+    if not confirmation.ok:
+        ret = make_error('Could not confirm eval with Botleague', 401)
+    else:
+        db = get_jobs_db()
+
+        job = dict(status=constants.JOB_STATUS_TO_START,
+                   eval_spec=dict(
+                       problem=problem, eval_id=eval_id, eval_key=eval_key,
+                       seed=seed, docker_tag=docker_tag,
+                       pull_request=pull_request,
+                       results_callback=RESULTS_CALLBACK, ))
+
+        submitted = db.compare_and_swap(key=eval_id,
+                                        expected_current_value=None,
+                                        new_value=job)
+
+        if not submitted:
+            ret = make_error('eval_id has already been processed', 403)
+        else:
+            ret = jsonify({'success': True})
     return ret
 
 
