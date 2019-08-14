@@ -6,9 +6,9 @@ import requests
 from box import Box
 from flask import Flask, jsonify, request
 
-import constants
+from problem_constants import constants
 from common import get_jobs_db, get_instances_db
-from constants import RESULTS_CALLBACK
+from problem_constants.constants import RESULTS_CALLBACK, BOTLEAGUE_LIAISON_HOST
 from loguru import logger as log
 
 app = Flask(__name__)
@@ -29,7 +29,7 @@ def index():
 
 
 @app.route('/eval/<problem>', methods=['POST'])
-def handle_eval(problem):
+def handle_eval_request(problem):
     try:
         # Unpack our endpoint parameters from the URL arguments
         eval_id = request.json['eval_id']
@@ -58,47 +58,20 @@ def handle_eval(problem):
     return ret
 
 
-@app.route('/results', methods=['POST'])
-def handle_results() -> Any:
-    req = Box(request.json)
-
-    log.info(f'Processing results for job \n{req.to_json(indent=2)}')
-
-    instance_id = req.instance_id
-    db = get_instances_db()
-    instance = db.get(instance_id)
-    instance.status = constants.INSTANCE_STATUS_AVAILABLE
-    instance.time_last_available = time.time()
-    db.set(instance_id, instance)
-    log.success(f'Made instance {instance_id} available')
-
-    results_resp = requests.post('https://liaison.botleague.io/results',
-                                 data={'eval_key': req.eval_spec.eval_key,
-                                       'results': req.results})
-    if not results_resp.ok:
-        log.error(f'Error posting results back to botleague: {results_resp}')
-        ret = make_error(str(results_resp), 500)
-    else:
-        json_resp = results_resp.json()
-        log.success(json_resp)
-        ret = json_resp
-    return ret
-
-
 def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed):
-    confirmation = requests.post('https://liaison.botleague.io/confirm',
-                                 data={'eval_key': eval_key})
+    confirmation = requests.post(f'{BOTLEAGUE_LIAISON_HOST}/confirm',
+                                 json={'eval_key': eval_key}, )
     if not confirmation.ok:
         ret = make_error('Could not confirm eval with Botleague', 401)
     else:
         db = get_jobs_db()
 
-        job = dict(status=constants.JOB_STATUS_TO_START,
+        job = dict(status=constants.JOB_STATUS_CREATED,
+                   results_callback=RESULTS_CALLBACK,
                    eval_spec=dict(
                        problem=problem, eval_id=eval_id, eval_key=eval_key,
                        seed=seed, docker_tag=docker_tag,
-                       pull_request=pull_request,
-                       results_callback=RESULTS_CALLBACK, ))
+                       pull_request=pull_request,))
 
         submitted = db.compare_and_swap(key=eval_id,
                                         expected_current_value=None,
