@@ -38,7 +38,8 @@ def handle_eval_request(problem):
         docker_tag = request.json['docker_tag']
         pull_request = request.json.get('pull_request', None)
     except KeyError as err:
-        print(traceback.format_exc())
+        log.error(traceback.format_exc())
+        log.exception('Error getting required params')
 
         # If any or our required parameters were missing,
         # send a "400 Bad Request" response
@@ -52,7 +53,8 @@ def handle_eval_request(problem):
         except Exception as err:
             # If anything went wrong inside the endpoint logic,
             # send a "500 Internal Server Error" response
-            print(traceback.format_exc())
+            log.error(traceback.format_exc())
+            log.exception('Problem submitting job')
             ret = make_error(err, 500)
     print(ret)
     return ret
