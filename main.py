@@ -38,6 +38,9 @@ def handle_eval_request(problem):
         eval_key = request.json['eval_key']
         seed = request.json['seed']
         docker_tag = request.json['docker_tag']
+        json_box = Box(request.json, default_box=True)
+        max_seconds = json_box.problem_def.max_seconds or None
+
         pull_request = request.json.get('pull_request', None)
     except KeyError as err:
         log.error(traceback.format_exc())
@@ -50,7 +53,7 @@ def handle_eval_request(problem):
     else:
         try:
             ret = submit_job(docker_tag, eval_id, eval_key, problem,
-                             pull_request, seed)
+                             pull_request, seed, max_seconds)
 
         except Exception as err:
             # If anything went wrong inside the endpoint logic,
@@ -63,20 +66,27 @@ def handle_eval_request(problem):
     return ret
 
 
-def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed):
-    confirmation = requests.post(f'{BOTLEAGUE_LIAISON_HOST}/confirm',
-                                 json={'eval_key': eval_key}, )
-    if not confirmation.ok:
-        ret = make_error('Could not confirm eval with Botleague', 401)
-    else:
-        db = get_jobs_db()
+def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
+               max_seconds):
+    messages = []
 
-        job = dict(status=constants.JOB_STATUS_CREATED,
-                   results_callback=RESULTS_CALLBACK,
-                   eval_spec=dict(
-                       problem=problem, eval_id=eval_id, eval_key=eval_key,
-                       seed=seed, docker_tag=docker_tag,
-                       pull_request=pull_request,))
+    start_job_submit = time.time()
+    db = get_jobs_db()
+
+    if not max_seconds:
+        messages.append(f'max_seconds not set in problem definition, '
+                        f'defaulting to '
+                        f'{constants.MAX_EVAL_SECONDS_DEFAULT} seconds')
+        max_seconds = constants.MAX_EVAL_SECONDS_DEFAULT
+
+    job = dict(status=constants.JOB_STATUS_CREATED,
+               results_callback=RESULTS_CALLBACK,
+               eval_spec=dict(
+                   problem=problem, eval_id=eval_id, eval_key=eval_key,
+                   seed=seed, docker_tag=docker_tag,
+                   pull_request=pull_request,
+                   max_seconds=max_seconds
+               ))
 
         submitted = db.compare_and_swap(key=eval_id,
                                         expected_current_value=None,
