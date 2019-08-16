@@ -30,6 +30,8 @@ def index():
 
 @app.route('/eval/<problem>', methods=['POST'])
 def handle_eval_request(problem):
+    start = time.time()
+    log.info('Starting eval request')
     try:
         # Unpack our endpoint parameters from the URL arguments
         eval_id = request.json['eval_id']
@@ -56,7 +58,8 @@ def handle_eval_request(problem):
             log.error(traceback.format_exc())
             log.exception('Problem submitting job')
             ret = make_error(err, 500)
-    print(ret)
+    log.info(ret)
+    log.info(f'Eval request took {time.time() - start} seconds')
     return ret
 
 
@@ -79,10 +82,13 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed):
                                         expected_current_value=None,
                                         new_value=job)
 
-        if not submitted:
-            ret = make_error('eval_id has already been processed', 403)
-        else:
-            ret = jsonify({'success': True})
+    if not submitted:
+        ret = make_error('eval_id has already been processed', 403)
+    else:
+        ret = jsonify({'success': True, 'message': ' '.join(messages)})
+
+    log.info(f'Save submitted job took {time.time() - start_job_submit} '
+             f'seconds')
     return ret
 
 
