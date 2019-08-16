@@ -103,6 +103,6 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
 
 
 if __name__ == "__main__":
-    # Don't use debug mode in production.
-    # See Dockerfile for how to run in prod.
+    # Don't use debug mode in production or if you don't want to
+    # reload on change.
     app.run(host="0.0.0.0", port=8000, debug=False)
