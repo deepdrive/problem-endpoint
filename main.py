@@ -88,9 +88,9 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
                    max_seconds=max_seconds
                ))
 
-        submitted = db.compare_and_swap(key=eval_id,
-                                        expected_current_value=None,
-                                        new_value=job)
+    submitted = db.compare_and_swap(key=eval_id,
+                                    expected_current_value=None,
+                                    new_value=job)
 
     if not submitted:
         ret = make_error('eval_id has already been processed', 403)
