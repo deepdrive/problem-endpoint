@@ -3,6 +3,7 @@ import traceback
 from typing import Any
 
 import requests
+from botleague_helpers.db import get_db
 from box import Box
 from flask import Flask, jsonify, request
 
@@ -10,6 +11,8 @@ from problem_constants import constants
 from common import get_jobs_db, get_instances_db
 from problem_constants.constants import RESULTS_CALLBACK, BOTLEAGUE_LIAISON_HOST
 from loguru import logger as log
+
+from constants import ON_GAE
 
 app = Flask(__name__)
 
@@ -32,6 +35,11 @@ def index():
 def handle_eval_request(problem):
     start = time.time()
     log.info('Starting eval request')
+
+    db = get_db(constants.EVAL_CONFIG_COLLECTION_NAME)
+    if ON_GAE and db.get('DISABLE_EVAL') is True:
+        return make_error('Evals are disabled', 423)
+
     try:
         # Unpack our endpoint parameters from the URL arguments
         eval_id = request.json['eval_id']
