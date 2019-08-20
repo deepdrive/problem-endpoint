@@ -8,8 +8,10 @@ from box import Box
 from flask import Flask, jsonify, request
 
 from problem_constants import constants
-from common import get_jobs_db, get_instances_db
-from problem_constants.constants import RESULTS_CALLBACK, BOTLEAGUE_LIAISON_HOST
+
+import common
+from common import get_jobs_db, get_instances_db, get_config_db
+from problem_constants.constants import get_results_callback, BOTLEAGUE_LIAISON_HOST
 from loguru import logger as log
 
 from constants import ON_GAE
@@ -27,8 +29,9 @@ def make_error(err, code=400):
 @app.route("/")
 def index():
     return 'Deepdrive sim service that serves as a Botleague problem ' \
-           'endpoint and CI service. ' \
-           'Source https://github.com/deepdrive/deepdrive-sim-service'
+           'endpoint and CI service.<br>' \
+           'Source https://github.com/deepdrive/deepdrive-sim-service <br>' \
+           f'Botleague host: {common.BOTLEAGUE_LIAISON_HOST}'
 
 
 @app.route('/eval/<problem>', methods=['POST'])
@@ -88,7 +91,7 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
         max_seconds = constants.MAX_EVAL_SECONDS_DEFAULT
 
     job = dict(status=constants.JOB_STATUS_CREATED,
-               results_callback=RESULTS_CALLBACK,
+               results_callback=get_results_callback(),
                eval_spec=dict(
                    problem=problem, eval_id=eval_id, eval_key=eval_key,
                    seed=seed, docker_tag=docker_tag,
@@ -109,6 +112,8 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
              f'seconds')
     return ret
 
+
+common.add_botleague_host_watch()
 
 if __name__ == "__main__":
     # Don't use debug mode in production or if you don't want to
