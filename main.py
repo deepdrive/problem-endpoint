@@ -1,7 +1,7 @@
 import time
 import traceback
 from typing import Any
-
+import json
 import requests
 from botleague_helpers.db import get_db
 from box import Box
@@ -37,7 +37,7 @@ def index():
 @app.route('/eval/<problem>', methods=['POST'])
 def handle_eval_request(problem):
     start = time.time()
-    log.info('Starting eval request')
+    log.info(f'Starting eval request {json.dumps(request.json, indent=2)}')
 
     db = get_config_db()
     if ON_GAE and db.get('DISABLE_EVAL') is True:
@@ -90,22 +90,26 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
                         f'{constants.MAX_EVAL_SECONDS_DEFAULT} seconds')
         max_seconds = constants.MAX_EVAL_SECONDS_DEFAULT
 
-    job = dict(status=constants.JOB_STATUS_CREATED,
-               results_callback=get_results_callback(),
-               eval_spec=dict(
-                   problem=problem, eval_id=eval_id, eval_key=eval_key,
-                   seed=seed, docker_tag=docker_tag,
-                   pull_request=pull_request,
-                   max_seconds=max_seconds
-               ))
+    job = Box(status=constants.JOB_STATUS_CREATED,
+              results_callback=get_results_callback(),
+              eval_spec=dict(
+                  problem=problem, eval_id=eval_id, eval_key=eval_key,
+                  seed=seed, docker_tag=docker_tag,
+                  pull_request=pull_request,
+                  max_seconds=max_seconds
+              ))
+
+    log.info(f'Submitting job {eval_id}: {job.to_json(indent=2)}')
 
     submitted = db.compare_and_swap(key=eval_id,
                                     expected_current_value=None,
-                                    new_value=job)
+                                    new_value=job.to_dict())
 
     if not submitted:
-        ret = make_error('eval_id has already been processed', 403)
+        ret = make_error(f'eval_id {eval_id} has already been processed', 403)
     else:
+        for msg in messages:
+            log.info(msg)
         ret = jsonify({'success': True, 'message': ' '.join(messages)})
 
     log.info(f'Save submitted job took {time.time() - start_job_submit} '
