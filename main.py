@@ -36,7 +36,7 @@ def handle_eval_request(problem):
     start = time.time()
     log.info('Starting eval request')
 
-    db = get_db(constants.EVAL_CONFIG_COLLECTION_NAME)
+    db = get_config_db()
     if ON_GAE and db.get('DISABLE_EVAL') is True:
         return make_error('Evals are disabled', 423)
 
