@@ -34,6 +34,12 @@ pip install -r requirements.txt
 See Makefile
 
 
+## Debugging
+
+If you want GAE to use a different `BOTLEAGUE_LIAISON_HOST` that the default,
+i.e. `liaison.botleague.io`, just set `BOTLEAGUE_LIAISON_HOST` in the eval 
+config db, e.g. `<problem-endpoint-name>_eval_config`.
+
 ## Legal
 
 Copyright &copy; 2019, [Deepdrive](https://deepdrive.io/). Licensed under the MIT License, see the file [LICENSE](./LICENSE) for details.
