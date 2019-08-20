@@ -27,6 +27,9 @@ def add_botleague_host_watch():
         process on App Engine"""
     db = get_config_db()
 
+    # Ensure BOTLEAGUE_LIAISON_HOST is set correctly on app start
+    constants.BOTLEAGUE_LIAISON_HOST = db.get('BOTLEAGUE_LIAISON_HOST')
+
     # Create a callback on_snapshot function to capture changes
     def on_botleague_host_change(col_snapshot, changes, read_time):
         global BOTLEAGUE_LIAISON_HOST
