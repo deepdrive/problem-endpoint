@@ -11,7 +11,6 @@ from problem_constants import constants
 
 import common
 from common import get_jobs_db, get_instances_db, get_config_db
-from problem_constants.constants import get_results_callback, BOTLEAGUE_LIAISON_HOST
 from loguru import logger as log
 
 from constants import ON_GAE
@@ -31,7 +30,7 @@ def index():
     return 'Deepdrive sim service that serves as a Botleague problem ' \
            'endpoint and CI service.<br>' \
            'Source https://github.com/deepdrive/deepdrive-sim-service <br>' \
-           f'Botleague host: {common.BOTLEAGUE_LIAISON_HOST}'
+           f'Botleague host: {constants.BOTLEAGUE_LIAISON_HOST}'
 
 
 @app.route('/eval/<problem>', methods=['POST'])
@@ -91,7 +90,7 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
         max_seconds = constants.MAX_EVAL_SECONDS_DEFAULT
 
     job = Box(status=constants.JOB_STATUS_CREATED,
-              results_callback=get_results_callback(),
+              botleague_liaison_host=constants.BOTLEAGUE_LIAISON_HOST,
               eval_spec=dict(
                   problem=problem, eval_id=eval_id, eval_key=eval_key,
                   seed=seed, docker_tag=docker_tag,
