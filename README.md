@@ -29,6 +29,9 @@ pip install -r requirements.txt
 ```
 
 
+## Deploy, logs, etc..
+
+See Makefile
 
 
 ## Legal
