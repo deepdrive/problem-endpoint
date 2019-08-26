@@ -1,0 +1,10 @@
+POST http://localhost:8000/sim-build
+Content-Type: application/json
+
+{
+  "build_id": 1234,
+  "commit": "b496ebe83d60c2b99d686ee9b5908ecf2a318908",
+  "branch": "v3_stable",
+  "run_local_debug":  true
+}
+###
