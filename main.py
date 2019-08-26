@@ -1,19 +1,21 @@
+from datetime import datetime
+
 import time
 import traceback
-from typing import Any
 import json
-import requests
-from botleague_helpers.db import get_db
 from box import Box
 from flask import Flask, jsonify, request
+from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 
 from problem_constants import constants
+from problem_constants.constants import DIR_DATE_FORMAT
 
 import common
-from common import get_jobs_db, get_instances_db, get_config_db
+from common import get_jobs_db, get_config_db
 from loguru import logger as log
 
 from constants import ON_GAE
+from utils import dbox
 
 app = Flask(__name__)
 
@@ -31,6 +33,28 @@ def index():
            'endpoint and CI service.<br>' \
            'Source https://github.com/deepdrive/deepdrive-sim-service <br>' \
            f'Botleague host: {constants.BOTLEAGUE_LIAISON_HOST}'
+
+
+@app.route('/sim-build', methods=['POST'])
+def handle_ci_request():
+    # TODO: Verify that Travis initiated the request with some shared secret.
+    #  Travis will not reveal secret config vars to external pull requests...
+    # TODO: Ping slack alert channel when this is called
+    db = common.get_jobs_db()
+    commit = request.json['commit']
+    job_id = f'{datetime.utcnow().strftime(DIR_DATE_FORMAT)}_{commit}'
+    run_local_debug = dbox(request.json).run_local_debug or False
+    job = Box(id=job_id,
+              commit=commit,
+              branch=request.json['branch'],
+              build_id=request.json['build_id'],
+              status=constants.JOB_STATUS_CREATED,
+              job_type=constants.JOB_TYPE_SIM_BUILD,
+              created_at=SERVER_TIMESTAMP,
+              run_local_debug=run_local_debug)
+    db.set(job_id, job)
+    log.success(f'Created job {job.to_json(indent=2, default=str)}')
+    return jsonify({'success': True})
 
 
 @app.route('/eval/<problem>', methods=['POST'])
@@ -62,8 +86,8 @@ def handle_eval_request(problem):
                          400)
     else:
         try:
-            ret = submit_job(docker_tag, eval_id, eval_key, problem,
-                             pull_request, seed, max_seconds)
+            ret = submit_eval_job(docker_tag, eval_id, eval_key, problem,
+                                  pull_request, seed, max_seconds)
 
         except Exception as err:
             # If anything went wrong inside the endpoint logic,
@@ -76,8 +100,8 @@ def handle_eval_request(problem):
     return ret
 
 
-def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
-               max_seconds):
+def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
+                    max_seconds):
     messages = []
 
     start_job_submit = time.time()
@@ -89,13 +113,19 @@ def submit_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
                         f'{constants.MAX_EVAL_SECONDS_DEFAULT} seconds')
         max_seconds = constants.MAX_EVAL_SECONDS_DEFAULT
 
-    job = Box(status=constants.JOB_STATUS_CREATED,
+    job_id = f'{datetime.utcnow().strftime(DIR_DATE_FORMAT)}_{eval_id}'
+    job = Box(id=job_id,
+              status=constants.JOB_STATUS_CREATED,
+              job_type=constants.JOB_TYPE_EVAL,
               botleague_liaison_host=constants.BOTLEAGUE_LIAISON_HOST,
+              created_at=SERVER_TIMESTAMP,
               eval_spec=dict(
-                  problem=problem, eval_id=eval_id, eval_key=eval_key,
+                  problem=problem,
+                  eval_id=eval_id,
+                  eval_key=eval_key,
                   seed=seed, docker_tag=docker_tag,
                   pull_request=pull_request,
-                  max_seconds=max_seconds
+                  max_seconds=max_seconds,
               ))
 
     log.info(f'Submitting job {eval_id}: {job.to_json(indent=2)}')
