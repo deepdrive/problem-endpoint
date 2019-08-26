@@ -1,3 +1,0 @@
-dispatch:
-  - url: "sim.deepdrive.io/*"
-    service: deepdrive-problem-endpoint
