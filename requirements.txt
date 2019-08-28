@@ -2,9 +2,9 @@ Flask==1.0.3
 requests>=2.22.0
 PyYAML>=5.1.1
 gunicorn>=19.9.0
-botleague-helpers
 python-box
 google-cloud-storage>=1.15.0
 google-auth>=1.6.3
 loguru
+git+git://github.com/botleague/botleague-helpers#egg=botleague-helpers
 git+git://github.com/deepdrive/problem-constants#egg=problem-constants
