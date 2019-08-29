@@ -35,8 +35,20 @@ def index():
            f'Botleague host: {constants.BOTLEAGUE_LIAISON_HOST}'
 
 
-@app.route('/sim-build', methods=['POST'])
-def handle_ci_request():
+@app.route('/job/status', methods=['POST'])
+def handle_job_status_request():
+    db = common.get_jobs_db()
+    job_id = request.json['job_id']
+    job = dbox(db.get(job_id))
+    ret = dict(status=job.status,
+               created_at=job.created_at,
+               started_at=job.started_at,
+               results=job.results, )
+    return jsonify(ret)
+
+
+@app.route('/build', methods=['POST'])
+def handle_sim_build_request():
     # TODO: Verify that Travis initiated the request with some shared secret.
     #  Travis will not reveal secret config vars to external pull requests...
     # TODO: Ping slack alert channel when this is called
@@ -54,7 +66,7 @@ def handle_ci_request():
               run_local_debug=run_local_debug)
     db.set(job_id, job)
     log.success(f'Created job {job.to_json(indent=2, default=str)}')
-    return jsonify({'success': True})
+    return jsonify({'job_id': job_id})
 
 
 @app.route('/eval/<problem>', methods=['POST'])

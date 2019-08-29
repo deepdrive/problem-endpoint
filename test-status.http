@@ -1,0 +1,7 @@
+POST http://0.0.0.0:8000/job/status
+Content-Type: application/json
+
+{
+  "job_id": "2019-08-29_09-02-47PM_e5df918089c5e4afd986ff5a09c293b90bf96869"
+}
+###
