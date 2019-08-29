@@ -31,7 +31,7 @@ def make_error(err, code=400):
 def index():
     return 'Deepdrive sim service that serves as a Botleague problem ' \
            'endpoint and CI service.<br>' \
-           'Source https://github.com/deepdrive/deepdrive-sim-service <br>' \
+           'Source https://github.com/deepdrive/problem-endpoint <br>' \
            f'Botleague host: {constants.BOTLEAGUE_LIAISON_HOST}'
 
 
