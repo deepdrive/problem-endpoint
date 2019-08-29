@@ -1,10 +1,10 @@
-POST https://sim.deepdrive.io/sim-build
+POST http://localhost:8000/sim-build
 Content-Type: application/json
 
 {
-  "build_id": 1236,
+  "build_id": 1234,
   "commit": "e5df918089c5e4afd986ff5a09c293b90bf96869",
   "branch": "v3_stable",
-  "run_local_debug":  false
+  "run_local_debug":  true
 }
 ###
