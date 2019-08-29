@@ -1,4 +1,4 @@
-POST https://sim.deepdrive.io/sim-build
+POST https://sim.deepdrive.io/build
 Content-Type: application/json
 
 {

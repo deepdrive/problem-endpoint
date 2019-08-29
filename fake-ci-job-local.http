@@ -1,4 +1,4 @@
-POST http://localhost:8000/sim-build
+POST http://localhost:8000/build
 Content-Type: application/json
 
 {
