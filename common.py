@@ -42,7 +42,7 @@ def add_botleague_host_watch():
                 # Fallback if it's not set in DB
                 constants.BOTLEAGUE_LIAISON_HOST = \
                     constants.BOTLEAGUE_LIAISON_HOST
-            log.success(f'Changed botleague host to '
+            log.success(f'Communicating with botleague at  '
                         f'{constants.BOTLEAGUE_LIAISON_HOST}')
             # if change.type.name == 'ADDED':
             #     print(u'New city: {}'.format(change.document.id))
