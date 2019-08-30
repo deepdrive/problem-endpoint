@@ -1,4 +1,4 @@
-POST https://sim.deepdrive.io/job/status
+POST http://0.0.0.0:8000/job/status
 Content-Type: application/json
 
 {
