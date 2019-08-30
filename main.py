@@ -40,7 +40,8 @@ def handle_job_status_request():
     db = common.get_jobs_db()
     job_id = request.json['job_id']
     job = dbox(db.get(job_id))
-    ret = dict(status=job.status,
+    ret = dict(id=job_id,
+               status=job.status,
                created_at=job.created_at,
                started_at=job.started_at,
                results=job.results, )
