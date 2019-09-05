@@ -141,7 +141,7 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
                   max_seconds=max_seconds,
               ))
 
-    log.info(f'Submitting job {eval_id}: {job.to_json(indent=2)}')
+    log.info(f'Submitting job {eval_id}: {job.to_json(indent=2, default=str)}')
 
     submitted = db.compare_and_swap(key=eval_id,
                                     expected_current_value=None,
