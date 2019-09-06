@@ -143,7 +143,7 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
 
     log.info(f'Submitting job {eval_id}: {job.to_json(indent=2, default=str)}')
 
-    submitted = db.compare_and_swap(key=eval_id,
+    submitted = db.compare_and_swap(key=job_id,
                                     expected_current_value=None,
                                     new_value=job.to_dict())
 
