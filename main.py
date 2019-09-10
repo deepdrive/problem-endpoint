@@ -27,6 +27,7 @@ def make_error(err, code=400):
     return response
 
 
+@log.catch(reraise=True)
 @app.route("/")
 def index():
     return 'Deepdrive sim service that serves as a Botleague problem ' \
@@ -35,6 +36,7 @@ def index():
            f'Botleague host: {constants.BOTLEAGUE_LIAISON_HOST}'
 
 
+@log.catch(reraise=True)
 @app.route('/job/status', methods=['POST'])
 def handle_job_status_request():
     db = common.get_jobs_db()
@@ -48,6 +50,7 @@ def handle_job_status_request():
     return jsonify(ret)
 
 
+@log.catch(reraise=True)
 @app.route('/build', methods=['POST'])
 def handle_sim_build_request():
     # TODO: Verify that Travis initiated the request with some shared secret.
@@ -70,6 +73,7 @@ def handle_sim_build_request():
     return jsonify({'job_id': job_id})
 
 
+@log.catch(reraise=True)
 @app.route('/eval/<problem>', methods=['POST'])
 def handle_eval_request(problem):
     start = time.time()
