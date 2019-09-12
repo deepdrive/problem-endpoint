@@ -91,6 +91,7 @@ def handle_eval_request(problem):
         docker_tag = request.json['docker_tag']
         json_box = Box(request.json, default_box=True)
         max_seconds = json_box.problem_def.max_seconds or None
+        botleague_liaison_host = json_box.botleague_liaison_host or None
 
         pull_request = request.json.get('pull_request', None)
     except KeyError as err:
@@ -104,7 +105,8 @@ def handle_eval_request(problem):
     else:
         try:
             ret = submit_eval_job(docker_tag, eval_id, eval_key, problem,
-                                  pull_request, seed, max_seconds)
+                                  pull_request, seed, max_seconds,
+                                  botleague_liaison_host)
 
         except Exception as err:
             # If anything went wrong inside the endpoint logic,
@@ -118,7 +120,7 @@ def handle_eval_request(problem):
 
 
 def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
-                    max_seconds):
+                    max_seconds, botleague_liaison_host=None):
     messages = []
 
     start_job_submit = time.time()
@@ -131,10 +133,12 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
         max_seconds = constants.MAX_EVAL_SECONDS_DEFAULT
 
     job_id = f'{datetime.utcnow().strftime(DIR_DATE_FORMAT)}_{eval_id}'
+    botleague_liaison_host = botleague_liaison_host or \
+                             constants.BOTLEAGUE_LIAISON_HOST
     job = Box(id=job_id,
               status=constants.JOB_STATUS_CREATED,
               job_type=constants.JOB_TYPE_EVAL,
-              botleague_liaison_host=constants.BOTLEAGUE_LIAISON_HOST,
+              botleague_liaison_host=botleague_liaison_host,
               created_at=SERVER_TIMESTAMP,
               eval_spec=dict(
                   problem=problem,
@@ -142,8 +146,7 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
                   eval_key=eval_key,
                   seed=seed, docker_tag=docker_tag,
                   pull_request=pull_request,
-                  max_seconds=max_seconds,
-              ))
+                  max_seconds=max_seconds,))
 
     log.info(f'Submitting job {eval_id}: {job.to_json(indent=2, default=str)}')
 
