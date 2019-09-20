@@ -22,6 +22,12 @@ The endpoint, coordinator, and worker have all been designed so that you could
 easily re-use them for another problem on GCP, say vehicle detection, by changing
 constants.py and instance config JSON files.
 
+As Botleague is problem agnostic, all communication with the problem endpoint,
+coordinator, etc... happens through the endpoint. Obviously this means
+Botleague should not access the Problem endpoint database and visa versa, even
+though this is technically possible within the Deepdrive problem endpoint
+implementation. 
+
 ## Setup
 
 ```
