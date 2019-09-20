@@ -74,8 +74,8 @@ def handle_sim_build_request():
 
 
 @log.catch(reraise=True)
-@app.route('/eval/<problem>', methods=['POST'])
-def handle_eval_request(problem):
+@app.route('/eval/<problem_name>', methods=['POST'])
+def handle_eval_request(problem_name):
     start = time.time()
     log.info(f'Starting eval request {json.dumps(request.json, indent=2)}')
 
@@ -104,8 +104,9 @@ def handle_eval_request(problem):
                          400)
     else:
         try:
-            ret = submit_eval_job(docker_tag, eval_id, eval_key, problem,
+            ret = submit_eval_job(docker_tag, eval_id, eval_key, problem_name,
                                   pull_request, seed, max_seconds,
+                                  json_box.problem_def,
                                   botleague_liaison_host)
 
         except Exception as err:
@@ -119,8 +120,10 @@ def handle_eval_request(problem):
     return ret
 
 
-def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
-                    max_seconds, botleague_liaison_host=None):
+def submit_eval_job(docker_tag, eval_id, eval_key, problem_name: str,
+                    pull_request, seed, max_seconds,
+                    problem_def,
+                    botleague_liaison_host=None):
     messages = []
 
     start_job_submit = time.time()
@@ -141,12 +144,15 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem, pull_request, seed,
               botleague_liaison_host=botleague_liaison_host,
               created_at=SERVER_TIMESTAMP,
               eval_spec=dict(
-                  problem=problem,
+                  problem=problem_name,
                   eval_id=eval_id,
                   eval_key=eval_key,
-                  seed=seed, docker_tag=docker_tag,
+                  seed=seed,
+                  docker_tag=docker_tag,
                   pull_request=pull_request,
-                  max_seconds=max_seconds,))
+                  max_seconds=max_seconds,
+                  problem_def=problem_def,
+              ))
 
     log.info(f'Submitting job {eval_id}: {job.to_json(indent=2, default=str)}')
 
