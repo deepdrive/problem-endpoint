@@ -89,9 +89,9 @@ def handle_eval_request(problem_name):
         eval_key = request.json['eval_key']
         seed = request.json['seed']
         docker_tag = request.json['docker_tag']
-        json_box = Box(request.json, default_box=True)
-        max_seconds = json_box.problem_def.max_seconds or None
-        botleague_liaison_host = json_box.botleague_liaison_host or None
+        eval_request = Box(request.json, default_box=True)
+        max_seconds = eval_request.problem_def.max_seconds or None
+        botleague_liaison_host = eval_request.botleague_liaison_host or None
 
         pull_request = request.json.get('pull_request', None)
     except KeyError as err:
@@ -106,8 +106,9 @@ def handle_eval_request(problem_name):
         try:
             ret = submit_eval_job(docker_tag, eval_id, eval_key, problem_name,
                                   pull_request, seed, max_seconds,
-                                  json_box.problem_def,
-                                  botleague_liaison_host)
+                                  eval_request.problem_def,
+                                  eval_request,
+                                  botleague_liaison_host,)
 
         except Exception as err:
             # If anything went wrong inside the endpoint logic,
@@ -123,6 +124,7 @@ def handle_eval_request(problem_name):
 def submit_eval_job(docker_tag, eval_id, eval_key, problem_name: str,
                     pull_request, seed, max_seconds,
                     problem_def,
+                    full_eval_request,
                     botleague_liaison_host=None):
     messages = []
 
@@ -152,6 +154,7 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem_name: str,
                   pull_request=pull_request,
                   max_seconds=max_seconds,
                   problem_def=problem_def,
+                  full_eval_request=full_eval_request,  # TODO: Clean this up.
               ))
 
     log.info(f'Submitting job {eval_id}: {job.to_json(indent=2, default=str)}')
