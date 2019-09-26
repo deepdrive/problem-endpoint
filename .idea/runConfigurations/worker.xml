@@ -6,7 +6,6 @@
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
       <env name="GOOGLE_APPLICATION_CREDENTIALS" value="$USER_HOME$/Downloads/Voyage Project-d33af8724280.json" />
-      <env name="INSTANCE_ID" value="3252740775999381029" />
     </envs>
     <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../problem-worker" />
