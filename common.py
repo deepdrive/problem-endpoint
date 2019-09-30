@@ -1,7 +1,7 @@
 from time import sleep
 
 from box import Box
-from loguru import logger as log
+from logs import log
 
 from botleague_helpers.db import get_db
 from problem_constants import constants
