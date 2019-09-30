@@ -46,6 +46,7 @@ def handle_job_status_request():
                status=job.status,
                created_at=job.created_at,
                started_at=job.started_at,
+               finished_at=job.finished_at,
                results=job.results, )
     return jsonify(ret)
 
