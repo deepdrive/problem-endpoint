@@ -12,7 +12,7 @@ from problem_constants.constants import DIR_DATE_FORMAT
 
 import common
 from common import get_jobs_db, get_config_db
-from loguru import logger as log
+from logs import log
 
 from constants import ON_GAE
 from utils import dbox
