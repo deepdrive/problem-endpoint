@@ -1,10 +1,14 @@
+import math
+
+from botleague_helpers.utils import find_replace
 from datetime import datetime
 
 import time
 import traceback
 import json
 from box import Box
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, current_app
+from google.cloud import firestore
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 
 from problem_constants import constants
@@ -50,6 +54,25 @@ def handle_job_status_request():
                results=job.results, )
     return jsonify(ret)
 
+
+@log.catch(reraise=True)
+@app.route('/jobs')
+def handle_jobs_request():
+    if request.host != '0.0.0.0:8000':
+        # TODO: Add user-auth or here to protect eval keys
+        # https://cloud.google.com/appengine/docs/standard/python/users/
+        return 'Only available on localhost'
+    db = common.get_jobs_db()
+    jobs_ref = db.collection
+    query = jobs_ref.order_by(
+        'created_at', direction=firestore.Query.DESCENDING).order_by(
+        'id', direction=firestore.Query.DESCENDING).limit(100)
+    jobs = [j.to_dict() for j in list(query.stream())]
+    [find_replace(j, math.inf, replace="Infinity") for j in jobs]
+    [find_replace(j, -math.inf, replace="-Infinity") for j in jobs]
+    ret = json.dumps(jobs, indent=2, default=str, sort_keys=True)
+    ret = current_app.response_class(ret, mimetype="application/json")
+    return ret
 
 @log.catch(reraise=True)
 @app.route('/build', methods=['POST'])
