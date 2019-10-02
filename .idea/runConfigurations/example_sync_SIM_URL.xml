@@ -5,7 +5,8 @@
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
-      <env name="SIM_URL" value="https://storage.googleapis.com/deepdriveio/sim/release_candidates/deepdrive-sim-linux-3.0.20190917221041.zip" />
+      <env name="SIM_URL_OLD" value="https://storage.googleapis.com/deepdriveio/sim/release_candidates/deepdrive-sim-linux-3.0.20190917221041.zip" />
+      <env name="SIM_URL" value="https://storage.googleapis.com/deepdriveio/sim/release_candidates/deepdrive-sim-linux-3.0.20191002004256.zip" />
     </envs>
     <option name="SDK_HOME" value="" />
     <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../deepdrive" />

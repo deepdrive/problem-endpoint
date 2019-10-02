@@ -1,18 +1,19 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="server domain_rand BL" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="server domain_rand BL SIM_URL" type="PythonConfigurationType" factoryName="Python">
     <module name="deepdrive" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
+      <env name="SIM_URL" value="https://storage.googleapis.com/deepdriveio/sim/release_candidates/deepdrive-sim-linux-3.0.20191002004256.zip" />
     </envs>
     <option name="SDK_HOME" value="$USER_HOME$/anaconda3/envs/dd/bin/python3" />
-    <option name="WORKING_DIRECTORY" value="$USER_HOME$/src/deepdrive" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../deepdrive" />
     <option name="IS_MODULE_SDK" value="false" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$USER_HOME$/src/deepdrive/main.py" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../deepdrive/main.py" />
     <option name="PARAMETERS" value="--server --view-mode-period=16 --max-steps=100 --max-episodes=1 --sync --record --eval-only --render --upload-gist --image-resize-dims=&quot;[224,224,3]&quot;" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
