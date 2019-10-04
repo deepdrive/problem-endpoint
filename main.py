@@ -74,27 +74,23 @@ def handle_jobs_request():
     ret = current_app.response_class(ret, mimetype="application/json")
     return ret
 
+
+@log.catch(reraise=True)
+@app.route('/build-deepdrive', methods=['POST'])
+def handle_deepdrive_build_request():
+    # TODO: Verify that CircleCI initiated the request with some shared secret.
+    ret = start_build(build_type=constants.JOB_TYPE_DEEPDRIVE_BUILD,
+                      job_abbr='bdd')
+    return ret
+
+
 @log.catch(reraise=True)
 @app.route('/build', methods=['POST'])
 def handle_sim_build_request():
-    # TODO: Verify that Travis initiated the request with some shared secret.
-    #  Travis will not reveal secret config vars to external pull requests...
-    # TODO: Ping slack alert channel when this is called
-    db = common.get_jobs_db()
-    commit = request.json['commit']
-    job_id = f'{datetime.utcnow().strftime(DIR_DATE_FORMAT)}_{commit}'
-    run_local_debug = dbox(request.json).run_local_debug or False
-    job = Box(id=job_id,
-              commit=commit,
-              branch=request.json['branch'],
-              build_id=request.json['build_id'],
-              status=constants.JOB_STATUS_CREATED,
-              job_type=constants.JOB_TYPE_SIM_BUILD,
-              created_at=SERVER_TIMESTAMP,
-              run_local_debug=run_local_debug)
-    db.set(job_id, job)
-    log.success(f'Created job {job.to_json(indent=2, default=str)}')
-    return jsonify({'job_id': job_id})
+    # TODO: Verify that CircleCI initiated the request with some shared secret.
+    ret = start_build(build_type=constants.JOB_TYPE_SIM_BUILD,
+                      job_abbr='bsim')
+    return ret
 
 
 @log.catch(reraise=True)
@@ -198,6 +194,23 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem_name: str,
              f'seconds')
     return ret
 
+
+def start_build(build_type, job_abbr):
+    db = common.get_jobs_db()
+    commit = request.json['commit']
+    job_id = f'{datetime.utcnow().strftime(DIR_DATE_FORMAT)}_{job_abbr}_{commit}'
+    run_local_debug = dbox(request.json).run_local_debug or False
+    job = Box(id=job_id,
+              commit=commit,
+              branch=request.json['branch'],
+              build_id=request.json['build_id'],
+              status=constants.JOB_STATUS_CREATED,
+              job_type=build_type,
+              created_at=SERVER_TIMESTAMP,
+              run_local_debug=run_local_debug)
+    db.set(job_id, job)
+    log.success(f'Created job {job.to_json(indent=2, default=str)}')
+    return jsonify({'job_id': job_id})
 
 common.add_botleague_host_watch()
 
