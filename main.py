@@ -1,3 +1,5 @@
+import sys
+
 import math
 
 from botleague_helpers.utils import find_replace
@@ -55,10 +57,15 @@ def handle_job_status_request():
     return jsonify(ret)
 
 
+LOCAL_EXE_WHITELIST = ['/home/c2/anaconda3/envs/bl2/bin/python']
+
 @log.catch(reraise=True)
 @app.route('/jobs')
 def handle_jobs_request():
-    if request.host != '0.0.0.0:8000':
+    from_local = request.remote_addr == '127.0.0.1'
+    to_local = request.host not in ['0.0.0.0:8000', 'localhost:8000']
+    in_whitelist = sys.executable in LOCAL_EXE_WHITELIST
+    if not(from_local and to_local and in_whitelist):
         # TODO: Add user-auth or here to protect eval keys
         # https://cloud.google.com/appengine/docs/standard/python/users/
         return 'Only available on localhost'
