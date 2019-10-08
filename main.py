@@ -70,7 +70,7 @@ LOCAL_EXE_WHITELIST = ['/home/c2/anaconda3/envs/bl2/bin/python']
 @app.route('/jobs')
 def handle_jobs_request():
     from_local = request.remote_addr == '127.0.0.1'
-    to_local = request.host not in ['0.0.0.0:8000', 'localhost:8000']
+    to_local = request.host in ['0.0.0.0:8000', 'localhost:8000']
     in_whitelist = sys.executable in LOCAL_EXE_WHITELIST
     if not(from_local and to_local and in_whitelist):
         # TODO: Add user-auth or here to protect eval keys
