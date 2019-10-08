@@ -23,6 +23,13 @@ from logs import log
 from constants import ON_GAE
 from utils import dbox
 
+try:
+  import googleclouddebugger
+  googleclouddebugger.enable()
+except ImportError:
+  pass
+
+
 app = Flask(__name__)
 
 
