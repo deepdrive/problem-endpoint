@@ -15,6 +15,7 @@ from google.cloud.firestore_v1 import SERVER_TIMESTAMP
 
 from problem_constants import constants
 from problem_constants.constants import DIR_DATE_FORMAT
+from botleague_helpers.utils import box2json
 
 import common
 from common import get_jobs_db, get_config_db
@@ -191,7 +192,7 @@ def submit_eval_job(docker_tag, eval_id, eval_key, problem_name: str,
                   full_eval_request=full_eval_request,  # TODO: Clean this up.
               ))
 
-    log.info(f'Submitting job {eval_id}: {job.to_json(indent=2, default=str)}')
+    log.info(f'Submitting job {eval_id}: {box2json(job)}')
 
     submitted = db.compare_and_swap(key=job_id,
                                     expected_current_value=None,
@@ -223,7 +224,7 @@ def start_build(build_type, job_abbr):
               created_at=SERVER_TIMESTAMP,
               run_local_debug=run_local_debug)
     db.set(job_id, job)
-    log.success(f'Created job {job.to_json(indent=2, default=str)}')
+    log.success(f'Created job {box2json(job)}')
     return jsonify({'job_id': job_id})
 
 common.add_botleague_host_watch()
