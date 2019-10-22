@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="domain_randomization_short_test local prob endpoint" type="PythonConfigurationType" factoryName="Python">
+  <configuration default="false" name="domain_randomization_short_test path-follower local" type="PythonConfigurationType" factoryName="Python">
     <module name="deepdrive" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />
@@ -10,13 +10,13 @@
       <env name="BOTLEAGUE_CALLBACK" value="http://localhost:8080/eval/domain_randomization" />
     </envs>
     <option name="SDK_HOME" value="" />
-    <option name="WORKING_DIRECTORY" value="$USER_HOME$/src/deepdrive" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/../deepdrive" />
     <option name="IS_MODULE_SDK" value="true" />
     <option name="ADD_CONTENT_ROOTS" value="true" />
     <option name="ADD_SOURCE_ROOTS" value="true" />
     <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-    <option name="SCRIPT_NAME" value="$USER_HOME$/src/deepdrive/main.py" />
-    <option name="PARAMETERS" value="--net-path=&quot;https://s3-us-west-1.amazonaws.com/deepdrive/weights/domain_randomization_2019-03-04__02-11-53PM.zip&quot; --view-mode-period=16 --max-steps=100 --max-episodes=1 --sync --record --eval-only --render --eval-only --upload-gist" />
+    <option name="SCRIPT_NAME" value="$PROJECT_DIR$/../deepdrive/main.py" />
+    <option name="PARAMETERS" value="--path-follower --view-mode-period=16 --max-steps=100 --max-episodes=1 --sync --record --eval-only --render --eval-only --upload-gist" />
     <option name="SHOW_COMMAND_LINE" value="false" />
     <option name="EMULATE_TERMINAL" value="false" />
     <option name="MODULE_MODE" value="false" />
