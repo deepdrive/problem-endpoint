@@ -5,7 +5,6 @@
     <option name="PARENT_ENVS" value="true" />
     <envs>
       <env name="PYTHONUNBUFFERED" value="1" />
-      <env name="DEEPDRIVE_UPLOAD" value="1" />
       <env name="GOOGLE_APPLICATION_CREDENTIALS" value="$USER_HOME$/Downloads/Voyage Project-d33af8724280.json" />
       <env name="BOTLEAGUE_CALLBACK" value="http://localhost:8080/eval/domain_randomization" />
     </envs>
